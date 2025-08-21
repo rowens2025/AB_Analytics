@@ -1,5 +1,17 @@
-﻿.venv/
+﻿ Python
+.venv/
 __pycache__/
 *.pyc
-# optional: comment this out if you want raw data in the repo
-data/
+
+# Data
+data/*
+!data/marketing_ab.csv   # keep only the sample input file
+
+# Power BI
+*.pbix
+*.pbit
+*.tmp
+*.bak
+*.pbix.backup
+*.rsdscache
+*.rsds
