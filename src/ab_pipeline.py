@@ -142,6 +142,51 @@ def variant_by_segment(df: pd.DataFrame, cfg: Config) -> pd.DataFrame:
     g = g.rename(columns={cfg.segment_col: "segment"})
     return g
 
+def bayes_by_segment(df: pd.DataFrame, cfg: Config) -> pd.DataFrame:
+    """
+    Input df: columns [exp_id, segment, variant, n, cr] (from variant_by_segment)
+    Output: one row per (exp_id, segment) with Bayesian lift CI and win prob for B vs A.
+    """
+    import numpy as np
+    rows = []
+    for (exp, seg), g in df.groupby(["exp_id", "segment"]):
+        # ensure we have exactly one row for A and one for B
+        A = g[g[cfg.variant_col].astype(str).str.upper().eq("A")]
+        B = g[g[cfg.variant_col].astype(str).str.upper().eq("B")]
+        if A.empty or B.empty:
+            continue
+
+        # pull scalars
+        nA = int(A["n"].iloc[0])
+        nB = int(B["n"].iloc[0])
+        crA = float(A["cr"].iloc[0])
+        crB = float(B["cr"].iloc[0])
+
+        # derive successes from n * cr
+        sA = int(round(crA * nA))
+        sB = int(round(crB * nB))
+
+        # Beta(1,1) posteriors
+        aA, bA = 1 + sA, 1 + (nA - sA)
+        aB, bB = 1 + sB, 1 + (nB - sB)
+
+        draws = 100_000
+        SA = np.random.beta(aA, bA, draws)
+        SB = np.random.beta(aB, bB, draws)
+
+        prob = float((SB > SA).mean())
+        lift = (SB - SA) / SA  # relative lift
+
+        rows.append({
+            "exp_id": exp,
+            "segment": seg,
+            "prob_B_wins": prob,
+            "median_lift": float(np.median(lift)),
+            "p05": float(np.percentile(lift, 5)),
+            "p95": float(np.percentile(lift, 95))
+        })
+    return pd.DataFrame(rows)
+
 def run_pipeline(cfg: Config):
     # read_csv will bring the blank index as 'Unnamed: 0' if present; we drop it in _standardize_columns
     df = pd.read_csv(cfg.input_path)
@@ -153,7 +198,11 @@ def run_pipeline(cfg: Config):
 
     summary = summarize_experiments(df, cfg)
     seg = variant_by_segment(df, cfg)
+    bayes_seg = bayes_by_segment(seg, cfg)
+    (bayes_seg.sort_values(["exp_id", "segment"])
+        .to_csv(cfg.output_dir / "bayes_by_segment.csv", index=False))
 
     summary.to_csv(cfg.summary_csv, index=False)
     seg.to_csv(cfg.variant_segment_csv, index=False)
+    
     return cfg.summary_csv, cfg.variant_segment_csv

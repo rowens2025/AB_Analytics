@@ -1,0 +1,21 @@
+{
+  "name": "Techy Futuristic Dark",
+  "dataColors": [
+    "#00E5FF",
+    "#FF4081",
+    "#FFC107",
+    "#7C4DFF",
+    "#4CAF50",
+    "#FF5722",
+    "#9E9E9E",
+    "#00B8D4",
+    "#F06292",
+    "#FFD54F"
+  ],
+  "background": "#0A0F1C",
+  "foreground": "#E0E0E0",
+  "tableAccent": "#00E5FF",
+  "good": "#4CAF50",
+  "neutral": "#FFC107",
+  "bad": "#FF5252"
+}
