@@ -1,0 +1,5 @@
+﻿.venv/
+__pycache__/
+*.pyc
+# optional: comment this out if you want raw data in the repo
+data/
